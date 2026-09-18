@@ -1,6 +1,6 @@
 # Si Plasma Etching — MACE + LAMMPS/Kokkos + tfMC
 
-MD simulations of Ar⁺ sputtering and Cl2/Ar⁺ atomic layer etching (ALE) on a Si(100) slab, driven by a Foundational MACE-MLIP through LAMMPS's `mliap unified` interface.
+MD simulations of Ar⁺ sputtering and Cl2/Ar⁺ atomic layer etching (ALE) on a Si(100) slab, driven by Foundational MACE-MLIP through LAMMPS.
 
 ![Plasma etching](Plasma.jpg)
 
