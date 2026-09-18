@@ -1,0 +1,157 @@
+# ALE process (Cl2 dose then Ar+ sputter)
+
+newton          on
+
+variable 	lpcl equal 1100
+variable        lpar equal 500
+variable 	a loop ${lpcl}
+variable        b loop ${lpar}
+
+units		metal
+atom_style	charge
+boundary	p p f
+timestep 	0.0005
+
+variable 	lat_a equal 5.43
+
+variable 	x equal 4*${lat_a}
+variable 	y equal 4*${lat_a}
+variable 	z equal 8*${lat_a}+12.0
+variable 	len_z2 equal 8*${lat_a}
+
+region 		bbox block 0 ${x} 0 ${y} 0 ${z} units box
+create_box 	3 bbox
+
+lattice 	diamond ${lat_a}
+region 		lbox block 0 ${x} 0 ${y} 0 ${len_z2} units box
+create_atoms 	1 region lbox
+
+variable	M_Si equal 28.0855
+variable	M_Ar equal 39.948
+variable	M_Cl equal 35.453
+
+mass            1 ${M_Si}
+mass            2 ${M_Ar}
+mass		3 ${M_Cl}
+
+region          anchor block INF INF INF INF 0.0 2.72 units box
+region          insert block 0.0 ${x} 0.0 ${y} $((v_z-1.5)) $((v_z-1.5)) units box
+region		del block INF INF INF INF $((v_z-3)) ${z} units box
+
+group 		anchor region anchor
+group		insert region insert
+group 		mobile subtract all anchor
+group		amobile union mobile insert
+
+variable 	energ equal 80
+variable 	angl equal 0
+
+variable 	vel equal sqrt(2*${energ}*6.02214129*1.0e+7/${M_Ar}/6242)
+variable 	velz equal cos(${angl}*PI/180)*${vel}
+variable 	vely equal sin(${angl}*PI/180)*${vel}
+
+velocity	mobile create 298.0 459087
+
+pair_style      mliap unified ../Sputtering_MACE/MLIAP/mace-medium-density-agnesi-stress.model-mliap_lammps_cpu.pt 0
+pair_coeff      * * Si Ar Cl
+
+
+neighbor 	1.0 bin
+neigh_modify   	every 10 delay 0 check no
+
+variable	nall     equal count(all)
+variable	nfixed   equal count(anchor)
+variable	nmobile  equal count(mobile)
+variable 	ninject  equal count(insert)
+thermo      	100
+compute     	mtemp amobile temp
+thermo_style    custom step atoms v_nmobile v_ninject temp etotal
+compute_modify  mtemp dynamic/dof yes
+thermo_modify   temp mtemp
+thermo_modify	lost warn
+
+dump            myDump all custom 400 dump_cpu.lammpstrj id type x y z vx vy vz
+
+restart         4000 restart_cpu.1 restart_cpu.2
+
+variable    	c equal 0.0
+
+molecule        cl2 molecule.cl2
+
+label		loopcl
+
+variable    	c equal ${c}+1
+variable    	deposeed equal floor(random(1,3245,${c}))
+
+variable	velxcl equal normal(0,sqrt(2*${M_Cl}*8.617333262e-5*298.0),${deposeed})
+variable        velycl equal normal(0,sqrt(2*${M_Cl}*8.617333262e-5*298.0),${deposeed})
+variable        velzcl equal -abs(normal(0,sqrt(2*${M_Cl}*8.617333262e-5*298.0),${deposeed}))
+
+fix		depocl insert deposit 1 0 1000 ${deposeed} region insert mol cl2 vx ${velxcl} ${velxcl} vy ${velycl} ${velycl} vz ${velzcl} ${velzcl} units box
+
+fix     	2 mobile nve
+fix             3 insert nve
+
+run		2000
+
+unfix      	depocl
+
+fix        	1coolB mobile temp/berendsen 298.0 298.0 0.1
+fix        	2coolB insert temp/berendsen 298.0 298.0 0.1
+
+run		2000
+
+unfix           1coolB
+unfix           2coolB
+
+# tfMC-accelerated relaxation (fix tfmc): delta=0.12 A, T=298.0, 5000 steps
+unfix		2
+unfix		3
+
+variable	tfmcseedcl equal floor(random(1,999999,${deposeed}))
+fix		tfmc amobile tfmc 0.12 298.0 ${tfmcseedcl}
+
+run		5000
+
+unfix		tfmc
+
+next		a
+delete_atoms    region del
+jump		in_cpu.lammps loopcl
+
+label           loopar
+
+variable    	c equal ${c}+1
+variable    	deposeed equal floor(random(1,3245,${c}))
+
+fix             depoar insert deposit 1 2 1000 ${deposeed} region insert vx 0.0 0.0 vy ${vely} ${vely} vz -${velz} -${velz} units box
+
+fix     	2 mobile nve
+fix             3 insert nve
+
+run             2000
+
+unfix           depoar
+
+fix             3coolB mobile temp/berendsen 298.0 298.0 0.1
+fix             4coolB insert temp/berendsen 298.0 298.0 0.1
+
+run             2000
+
+unfix           3coolB
+unfix           4coolB
+
+# kMC-accelerated relaxation (fix tfmc)
+unfix		2
+unfix		3
+
+variable	tfmcseedar equal floor(random(1,999999,${deposeed}))
+fix		tfmc amobile tfmc 0.12 298.0 ${tfmcseedar}
+
+run		5000
+
+unfix		tfmc
+
+delete_atoms    region del
+next            b
+jump            in_cpu.lammps loopar

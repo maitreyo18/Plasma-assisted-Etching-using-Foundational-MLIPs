@@ -1,0 +1,20 @@
+# Ignore everything at the top level by default (large unrelated dirs: ALE, eon,
+# Sputtering, Sputtering_MACE_omat, TrainingData, graph.pb, graph-compress.pb, ...)
+ /*
+
+# Track only these four directories, plus the README and its image
+!/ALE_MACE/
+!/ALE_MACE_tfMC/
+!/Sputtering_MACE/
+!/Sputtering_MACE_tfMC/
+!/Plasma.jpg
+!/README.md
+!/.gitignore
+
+# Within the tracked directories, exclude these
+**/MLIAP/
+*.sh
+*.err
+*.out
+plot_etching.py
+*.png

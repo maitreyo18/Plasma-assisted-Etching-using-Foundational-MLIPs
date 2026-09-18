@@ -1,0 +1,114 @@
+# Ar-sputtering deposition with tfMC
+
+newton          on
+
+variable 	lp equal 110
+variable 	a loop ${lp}
+
+units		metal
+atom_style	charge
+boundary	p p f
+timestep 	0.0005
+
+variable 	lat_a equal 5.43
+
+variable 	x equal 4*${lat_a}
+variable 	y equal 4*${lat_a}
+variable 	z equal 8*${lat_a}+12.0
+variable 	len_z2 equal 8*${lat_a}
+
+region 		bbox block 0 ${x} 0 ${y} 0 ${z} units box
+create_box 	2 bbox
+
+lattice 	diamond ${lat_a}
+region 		lbox block  0 ${x} 0 ${y} 0 ${len_z2} units box
+create_atoms 	1 region lbox
+
+variable	M_Si equal 28.0855
+variable	M_Ar equal 39.948
+
+mass            1 ${M_Si}
+mass            2 ${M_Ar}
+
+region          anchor block INF INF INF INF 0.0 2.72 units box
+region          insert block 0.0 ${x} 0.0 ${y} $((v_z-0.5)) $((v_z-0.5)) units box
+region		del block INF INF INF INF $((v_z-3)) ${z} units box
+
+group 		anchor region anchor
+group		insert region insert
+group 		mobile subtract all anchor
+group		amobile union mobile insert
+
+variable 	energ equal 100
+variable 	angl equal 0
+
+variable 	vel equal sqrt(2*${energ}*6.02214129*1.0e+7/${M_Ar}/6242)
+variable 	velz equal cos(${angl}*PI/180)*${vel}
+variable 	vely equal sin(${angl}*PI/180)*${vel}
+
+velocity	mobile create 298.0 459087
+
+pair_style      mliap unified ./MLIAP/mace-medium-density-agnesi-stress.model-mliap_lammps_cpu.pt 0
+pair_coeff      * * Si Ar
+
+
+neighbor 	2.0 bin
+neigh_modify   	every 5 delay 0 check no
+
+variable	nall     equal count(all)
+variable	nfixed   equal count(anchor)
+variable	nmobile  equal count(mobile)
+variable 	ninject  equal count(insert)
+
+thermo      	100
+
+compute     	mtemp amobile temp
+thermo_style    custom step atoms v_nmobile v_ninject temp etotal
+compute_modify  mtemp dynamic/dof yes
+thermo_modify   temp mtemp
+thermo_modify	lost warn
+
+dump            myDump all custom 400 dump_cpu.lammpstrj id type x y z vx vy vz
+
+restart         4000 restart_cpu.1 restart_cpu.2
+
+variable    	c equal 0.0
+
+label		loop
+
+variable    	c equal ${c}+1
+variable    	deposeed equal floor(random(1,3245,${c}))
+
+fix		depo insert deposit 1 2 1000 ${deposeed} region insert vx 0.0 0.0 vy ${vely} ${vely} vz -${velz} -${velz} units box
+
+fix     	2 mobile nve
+fix             3 insert nve
+
+run		2000
+
+unfix      	depo
+
+fix        	1coolB mobile temp/berendsen 298.0 298.0 0.1
+fix        	2coolB insert temp/berendsen 298.0 298.0 0.1
+
+run		2000
+
+unfix           1coolB
+unfix           2coolB
+
+# tfMC-accelerated relaxation 
+# delta=0.12 A max displacement, T=298.0, 5000 steps per impact
+unfix		2
+unfix		3
+
+variable	tfmcseed equal floor(random(1,999999,${deposeed}))
+fix		tfmc amobile tfmc 0.12 298.0 ${tfmcseed}
+
+run		5000
+
+unfix		tfmc
+
+delete_atoms    region del
+
+next		a
+jump		in_cpu.lammps loop
