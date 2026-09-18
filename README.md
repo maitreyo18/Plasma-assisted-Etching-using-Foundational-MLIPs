@@ -26,3 +26,9 @@ MD simulations of Ar⁺ sputtering and Cl2/Ar⁺ atomic layer etching (ALE) on a
 2. **Event loop**: each iteration deposits one Ar⁺ ion (and, for ALE, alternates in Cl₂ dose cycles), runs MD, then cools with a Berendsen thermostat. The `_tfMC` variants replace/follow this with a `fix tfmc` relaxation phase before the next event.
 3. **Cleanup**: `delete_atoms region del` removes atoms that end up back near the injection height after each event (sputtered/un-embedded species).
 4. **Post-processing**: run `python convert.py` after the LAMMPS job finishes to produce `trajectory.extxyz` and VASP structure files from `dump_cpu.lammpstrj`.
+
+## References
+
+1. A. Kounis-Melas, J. R. Vella, A. Z. Panagiotopoulos, and D. B. Graves,  
+   "Deep potential molecular dynamics simulations of low-temperature plasma-surface interactions,"  
+   *Journal of Vacuum Science & Technology A*, **43**(1), 2025.
