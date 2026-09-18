@@ -7490,3 +7490,120 @@ Total # of neighbors = 76700
 Ave neighs/atom = 71.150278
 Neighbor list builds = 400
 Dangerous builds not checked
+
+unfix           1coolB
+unfix           2coolB
+
+# ---------- kMC-accelerated relaxation (fix tfmc) ----------
+# Runs instead of (not alongside) the NVE integrators above: fix tfmc is
+# itself a time-integration fix (LAMMPS docs: "no other fixes of this type,
+# such as fix nve, should be used at the same time"). Delta = 0.12 Angstrom
+# (the paper's Table I illustration value; 0.10 A is their other validated
+# default) is the max displacement (auto-scaled per atom by sqrt(m_min/m_i)
+# internally, so lighter Si atoms move further per step than Ar); Temp =
+# 298.0 matches the real target temperature this whole simulation runs at.
+# 5000 tfMC steps is the tunable "how much accelerated relaxation per ion
+# impact" budget -- raise for more relaxation (slower), lower for less
+# (faster).
+unfix		2
+unfix		3
+
+variable	tfmcseed equal floor(random(1,999999,${deposeed}))
+variable	tfmcseed equal floor(random(1,999999,2149))
+fix		tfmc amobile tfmc 0.12 298.0 ${tfmcseed}
+fix		tfmc amobile tfmc 0.12 298.0 123454
+
+run		5000
+Per MPI rank memory allocation (min/avg/max) = 165.1 | 165.1 | 165.1 Mbytes
+   Step        Atoms      v_nmobile      v_ninject         Temp          TotEng    
+    274000        1078   959            23             313.21369     -5365.772     
+    274100        1078   959            23             313.21369     -5353.3396    
+    274200        1078   959            23             313.21369     -5357.1875    
+    274300        1078   959            23             313.21369     -5355.8114    
+    274400        1078   959            23             313.21369     -5357.7535    
+    274500        1078   959            23             313.21369     -5358.6281    
+    274600        1078   959            23             313.21369     -5357.7949    
+    274700        1078   959            23             313.21369     -5359.5908    
+    274800        1078   959            23             313.21369     -5358.4901    
+    274900        1078   959            23             313.21369     -5361.1053    
+    275000        1078   959            23             313.21369     -5361.9474    
+    275100        1078   959            23             313.21369     -5359.1862    
+    275200        1078   959            23             313.21369     -5361.0356    
+    275300        1078   959            23             313.21369     -5360.6547    
+    275400        1078   959            23             313.21369     -5363.002     
+    275500        1078   959            23             313.21369     -5361.2713    
+    275600        1078   959            23             313.21369     -5361.0956    
+    275700        1078   959            23             313.21369     -5361.2797    
+    275800        1078   959            23             313.21369     -5363.7556    
+    275900        1078   959            23             313.21369     -5362.026     
+    276000        1078   959            23             313.21369     -5362.4146    
+    276100        1078   959            23             313.21369     -5361.4872    
+    276200        1078   959            23             313.21369     -5361.9779    
+    276300        1078   959            23             313.21369     -5359.9942    
+    276400        1078   959            23             313.21369     -5360.6917    
+    276500        1078   959            23             313.21369     -5362.7599    
+    276600        1078   959            23             313.21369     -5364.4183    
+    276700        1078   959            23             313.21369     -5363.9733    
+    276800        1078   959            23             313.21369     -5362.195     
+    276900        1078   959            23             313.21369     -5365.0187    
+    277000        1078   959            23             313.21369     -5363.7771    
+    277100        1078   959            23             313.21369     -5363.775     
+    277200        1078   959            23             313.21369     -5363.8571    
+    277300        1078   959            23             313.21369     -5363.0342    
+    277400        1078   959            23             313.21369     -5366.4972    
+    277500        1078   959            23             313.21369     -5363.4959    
+    277600        1078   959            23             313.21369     -5364.9694    
+    277700        1078   959            23             313.21369     -5365.1787    
+    277800        1078   959            23             313.21369     -5365.9604    
+    277900        1078   959            23             313.21369     -5364.7585    
+    278000        1078   959            23             313.21369     -5366.3504    
+    278100        1078   959            23             313.21369     -5364.6558    
+    278200        1078   959            23             313.21369     -5369.022     
+    278300        1078   959            23             313.21369     -5366.3715    
+    278400        1078   959            23             313.21369     -5367.8687    
+    278500        1078   959            23             313.21369     -5367.7671    
+    278600        1078   959            23             313.21369     -5368.6889    
+    278700        1078   959            23             313.21369     -5367.6541    
+    278800        1078   959            23             313.21369     -5368.1648    
+    278900        1078   959            23             313.21369     -5367.9902    
+    279000        1078   959            23             313.21369     -5366.131     
+Loop time of 969.088 on 1 procs for 5000 steps with 1078 atoms
+
+Performance: 0.223 ns/day, 107.676 hours/ns, 5.159 timesteps/s, 5.562 katom-step/s
+99.5% CPU use with 1 MPI tasks x 1 OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 962.55     | 962.55     | 962.55     |   0.0 | 99.33
+Neigh   | 0.24492    | 0.24492    | 0.24492    |   0.0 |  0.03
+Comm    | 1.5977     | 1.5977     | 1.5977     |   0.0 |  0.16
+Output  | 0.16669    | 0.16669    | 0.16669    |   0.0 |  0.02
+Modify  | 4.0656     | 4.0656     | 4.0656     |   0.0 |  0.42
+Other   |            | 0.4644     |            |       |  0.05
+
+Nlocal:           1078 ave        1078 max        1078 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           1896 ave        1896 max        1896 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:              0 ave           0 max           0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:        75238 ave       75238 max       75238 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 75238
+Ave neighs/atom = 69.794063
+Neighbor list builds = 1000
+Dangerous builds not checked
+
+unfix		tfmc
+# ------------------------------------------------------------
+
+delete_atoms    region del
+Deleted 0 atoms, new total = 1078
+
+next		a
+jump		in_cpu.lammps loop
+ERROR on proc 0: Cannot open input script in_cpu.lammps: No such file or directory (src/input.cpp:1098)
+Last input line: jump in_cpu.lammps loop 
+                      ^^^^^^^^^^^^^
